@@ -1,0 +1,34 @@
+name: Check plugin
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: NeekoNoNeko/hermes-source-copy
+          ref: fd9f561d593bf9439e7da3a58ad793855e9f6d43
+          path: .cache/hermes-source-copy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --registry=https://registry.npmjs.org
+      - run: npm run check
+        env:
+          HERMES_SOURCE_COPY_PLUGIN: ${{ github.workspace }}/.cache/hermes-source-copy/plugin.js
+      - name: Verify committed build
+        run: git diff --exit-code -- plugin.js dist THIRD_PARTY_NOTICES.txt
+      - run: npm audit --audit-level=low --registry=https://registry.npmjs.org
